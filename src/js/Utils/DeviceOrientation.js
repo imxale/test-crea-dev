@@ -1,19 +1,20 @@
-import EventEmitter from "./EventEmitter";
+import EventEmitter from "./EventEmitter"
 
-export default class DeviceOrientation extends EventEmitter{
+export default class DeviceOrientation extends EventEmitter {
     constructor() {
-        super();
+        super()
 
-        this.alpha = 0; // around Z axis
-        this.beta = 0; // around X axis
-        this.gamma = 0; // around Y axis
+        /** coordinates */
+        this.alpha = 0 // around z (0 to 360°)
+        this.gamma = 0 // around y (-180 to 180°)
+        this.beta = 0 // around x (-90 to 90)
 
         /** permission */
         if (navigator.permissions) {
             Promise.all(
                 [navigator.permissions.query({ name: "accelerometer" }),
-                    navigator.permissions.query({ name: "magnetometer" }),
-                    navigator.permissions.query({ name: "gyroscope" })])
+                navigator.permissions.query({ name: "magnetometer" }),
+                navigator.permissions.query({ name: "gyroscope" })])
                 .then(results => {
                     if (results.every(
                         result => result.state === "granted")) {
@@ -22,9 +23,9 @@ export default class DeviceOrientation extends EventEmitter{
                         console.log("Permission to use sensor was denied.")
                     }
                 }).catch(err => {
-                console.log("Integration with Permissions API is not enabled, still try to start app.")
-                this.init()
-            })
+                    console.log("Integration with Permissions API is not enabled, still try to start app.")
+                    this.init()
+                })
         } else {
             console.log("No Permissions API, still try to start app.")
             this.init()
@@ -32,12 +33,12 @@ export default class DeviceOrientation extends EventEmitter{
     }
 
     init() {
-        window.addEventListener('deviceorientation', (event) => {
-            this.alpha = event.alpha;
-            this.beta = event.beta;
-            this.gamma = event.gamma;
+        window.addEventListener("deviceorientation", (e) => {
+            this.alpha = e.alpha
+            this.beta = e.beta
+            this.gamma = e.gamma
 
             this.trigger('reading')
-        });
+        }, true)
     }
 }

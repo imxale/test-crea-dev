@@ -1,4 +1,3 @@
-/** permission iPhone */
 export const askMotionAccess = () => {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission().then(permissionState => {

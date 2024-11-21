@@ -1,6 +1,6 @@
-import GlobalContext from "../GlobalContext"
-import Scene2D from "../Scene2D"
-import { degToRad, distance2D, randomRange } from "../Utils/MathUtils"
+import GlobalContext from "../template/GlobalContext"
+import Scene2D from "../template/Scene2D"
+import { clamp, degToRad, distance2D, randomRange } from "../Utils/MathUtils"
 
 class Bubble {
     constructor(context, x, y, radius) {
@@ -14,6 +14,10 @@ class Bubble {
         /** speed */
         this.vx = randomRange(-200, 200)
         this.vy = randomRange(-200, 200)
+
+        /** gravity */
+        this.gx = 0
+        this.gy = 0
     }
 
     draw() {
@@ -24,9 +28,17 @@ class Bubble {
         this.context.closePath()
     }
 
-    update(width, height) {
-        this.x += this.vx * this.time.delta / 1000
-        this.y += this.vy * this.time.delta / 1000
+    update(width, height, speed) {
+        const ajustedSpeed_ = speed / 10
+
+        /** gravity bounce */
+        this.gx = this.x > this.radius ? this.gx : 0
+        this.gx = this.x < width - this.radius ? this.gx : 0
+        // this.gy = this.y > this.radius ? this.gy : 0
+        // this.gy = this.y < height - this.radius ? this.gy : 0
+
+        this.x += (this.vx * ajustedSpeed_ + this.gx) * this.time.delta / 1000
+        this.y += (this.vy * ajustedSpeed_ + this.gy) * this.time.delta / 1000
 
         /** bounce */
         // if (this.x < 0 || this.x > width) this.vx *= -1
@@ -35,8 +47,8 @@ class Bubble {
         /** bounce corrected */
         this.vx = this.x < this.radius ? Math.abs(this.vx) : this.vx
         this.vx = this.x > width - this.radius ? -Math.abs(this.vx) : this.vx
-        this.vy = this.y < this.radius ? Math.abs(this.vy) : this.vy
-        this.vy = this.y > height - this.radius ? -Math.abs(this.vy) : this.vy
+        // this.vy = this.y < this.radius ? Math.abs(this.vy) : this.vy
+        // this.vy = this.y > height - this.radius ? -Math.abs(this.vy) : this.vy
     }
 }
 
@@ -46,10 +58,11 @@ export default class SceneBouncingBubbles extends Scene2D {
 
         /** debug */
         this.params = {
-            speed: 1, // positif ou negatif
+            speed: 10, // positif ou negatif
             threshold: 50,
             radius: 5,
-            nBubbles: 10
+            nBubbles: 1,
+            gStrength: 300
         }
         if (!!this.debugFolder) {
             this.debugFolder.add(this.params, "threshold", 0, 200)
@@ -61,6 +74,8 @@ export default class SceneBouncingBubbles extends Scene2D {
             this.debugFolder.add(this.params, "nBubbles", 3, 50).onFinishChange(() => {
                 this.generateBubbles()
             })
+            this.debugFolder.add(this.params, "gStrength", 0, 400)
+            this.debugFolder.add(this.params, "speed", -200, 200)
         }
 
         /** device orientation */
@@ -81,6 +96,16 @@ export default class SceneBouncingBubbles extends Scene2D {
             const bubble_ = new Bubble(this.context, x_, y_, 5)
             this.bubbles.push(bubble_)
         }
+    }
+
+    addBubble(x, y) {
+        const bubble_ = new Bubble(this.context, x, y, this.params.radius )
+        this.bubbles.push(bubble_)
+        return bubble_
+    }
+
+    removeBubble(bubble) {
+        this.bubbles = this.bubbles.filter(b => b !== bubble);
     }
 
     draw() {
@@ -116,7 +141,7 @@ export default class SceneBouncingBubbles extends Scene2D {
     update() {
         if (!!this.bubbles) {
             this.bubbles.forEach(b => {
-                b.update(this.width, this.height)
+                b.update(this.width, this.height, this.params.speed)
             })
         }
 
@@ -138,13 +163,17 @@ export default class SceneBouncingBubbles extends Scene2D {
     }
 
     onDeviceOrientation() {
-        /** debug */
-        let coordinates_ = ""
-        coordinates_ = coordinates_.concat(
-            this.orientation.alpha.toFixed(2), ", ",
-            this.orientation.beta.toFixed(2), ", ",
-            this.orientation.gamma.toFixed(2)
-        )
-        this.debug.domDebug = coordinates_
+        let gx_ = this.orientation.gamma / 90
+        let gy_ = this.orientation.beta / 90
+        gx_ = clamp(gx_, -1, 1)
+        gy_ = clamp(gy_, -1, 1)
+
+        /** update bubbles */
+        if (!!this.bubbles) {
+            this.bubbles.forEach(b => {
+                b.gx = gx_ * this.params.gStrength
+                b.gy = gy_ * this.params.gStrength
+            })
+        }
     }
 }

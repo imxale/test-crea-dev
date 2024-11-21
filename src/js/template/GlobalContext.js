@@ -1,6 +1,6 @@
-import Debug from "./Utils/Debug"
-import Time from "./Utils/Time"
-import DeviceOrientation from "./Utils/DeviceOrientation";
+import Debug from "../Utils/Debug"
+import DeviceOrientation from "../Utils/DeviceOrientation"
+import Time from "../Utils/Time"
 
 let instanceGlobalContext = null
 
@@ -13,22 +13,20 @@ export default class GlobalContext {
 
         window.addEventListener('resize', () => { this.resize() })
         window.addEventListener('scroll', () => { this.scroll() })
+        
         this.time = new Time()
         this.time.on('update', () => { this.update() })
-
-        this.orientation = new DeviceOrientation()
 
         /** debug */
         this.debug = new Debug()
     }
 
     set useDeviceOrientation(isOrientation) {
-        if (isOrientation && !!!this.orientation) {
+        if(isOrientation && !!!this.orientation) {
             this.orientation = new DeviceOrientation()
-            this.orientation.on('reading', () => { this.onDeviceOrientation()})
-        }
-
-        if (!isOrientation && !!this.orientation) { this.orientation.off('reading') }
+            this.orientation.on('reading', () => { this.onDeviceOrientation() })
+        } 
+        if(!isOrientation && !!this.orientation) { this.orientation.off('reading') }
     }
 
     onDeviceOrientation() {
@@ -68,6 +66,7 @@ export default class GlobalContext {
         window.removeEventListener('resize')
         window.removeEventListener('scroll')
         this.time.off('update')
+        this.useDeviceOrientation = false
         if(!!this.debug.ui) this.debug.ui.destroy()
     }
 }
